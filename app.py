@@ -1,5 +1,6 @@
 """Nyoms Vegetasi Pantai — panduan interaktif mangrove Indonesia."""
 from __future__ import annotations
+import os
 import sys
 import tkinter as tk
 from dataclasses import dataclass
@@ -56,11 +57,29 @@ SPECIES=(
   info("Niri, nyiri","Daun majemuk berlawanan, biasanya dua pasang anak daun per tangkai; ujung membundar.","Buah besar seperti kelapa, diameter 10–20 cm, berisi biji berkayu seperti teka-teki.","Akar papan melebar, berliuk dan bercelah.","Pinggir sungai pasang, tepi daratan mangrove dan payau yang tidak terlalu asin.","Buah besar berkayu 'puzzle fruit' sangat diagnostik.","Kulit kaya tanin; kayu kecil kadang untuk perahu.")),
 )
 
+ASSET_NAMES={
+ "Avicennia alba":"avicennia_alba.png", "Avicennia marina":"avicennia_marina.png",
+ "Bruguiera gymnorrhiza":"bruguiera_gymnorrhiza.png", "Nypa fruticans":"nypa_fruticans.png",
+ "Rhizophora apiculata":"rhizophora_apiculata.png", "Rhizophora mucronata":"rhizophora_mucronata.png",
+ "Rhizophora stylosa":"rhizophora_stylosa.png", "Sonneratia alba":"sonneratia_alba.png",
+ "Sonneratia caseolaris":"sonneratia_caseolaris.png", "Xylocarpus granatum":"xylocarpus_granatum.png",
+}
+
+def resource_path(*parts):
+ base=getattr(sys,"_MEIPASS",os.path.dirname(os.path.abspath(__file__)))
+ return os.path.join(base,*parts)
+
 def rank(selected):
  rows=[]
  for s in SPECIES:
   hits=sorted(selected.intersection(s.traits))
-  rows.append((s, len(hits)*10 if hits else 0, hits))
+  if not selected:
+   percent=0
+  else:
+   precision=len(hits)/len(selected)
+   recall=len(hits)/len(s.traits)
+   percent=round((2*precision*recall/(precision+recall))*100) if hits else 0
+  rows.append((s,percent,hits))
  return sorted(rows,key=lambda x:(-x[1],x[0].name))
 
 def image_note(path):
@@ -81,7 +100,16 @@ class App(tk.Tk):
   ttk.Label(top,text="Nyoms Vegetasi Pantai",font=("Segoe UI",18,"bold"),foreground="#0d5c48").pack(anchor="w")
   ttk.Label(top,text="Identifikasi dari foto + ciri lapangan • rujukan PDF Panduan Pengenalan Mangrove di Indonesia").pack(anchor="w")
   pane=ttk.PanedWindow(self,orient="horizontal"); pane.pack(fill="both",expand=True,padx=16,pady=(0,16))
-  left,right=ttk.Frame(pane,padding=12),ttk.Frame(pane,padding=12); pane.add(left,weight=1); pane.add(right,weight=2)
+  left_shell,right=ttk.Frame(pane),ttk.Frame(pane,padding=12); pane.add(left_shell,weight=1); pane.add(right,weight=2)
+  left_canvas=tk.Canvas(left_shell,highlightthickness=0)
+  left_scroll=ttk.Scrollbar(left_shell,orient="vertical",command=left_canvas.yview)
+  left_canvas.configure(yscrollcommand=left_scroll.set)
+  left_scroll.pack(side="right",fill="y"); left_canvas.pack(side="left",fill="both",expand=True)
+  left=ttk.Frame(left_canvas,padding=12)
+  left_window=left_canvas.create_window((0,0),window=left,anchor="nw")
+  left.bind("<Configure>",lambda e:left_canvas.configure(scrollregion=left_canvas.bbox("all")))
+  left_canvas.bind("<Configure>",lambda e:left_canvas.itemconfigure(left_window,width=e.width))
+  left_canvas.bind_all("<MouseWheel>",lambda e:left_canvas.yview_scroll(int(-1*(e.delta/120)),"units"))
   ttk.Label(left,text="1. Tambahkan foto",font=("Segoe UI",12,"bold")).pack(anchor="w")
   ttk.Button(left,text="Pilih foto tanaman…",command=self.pick).pack(anchor="w",pady=6)
   self.preview=ttk.Label(left,text="Belum ada foto",anchor="center",relief="solid",width=34); self.preview.pack(fill="x",ipady=68)
@@ -94,8 +122,19 @@ class App(tk.Tk):
   for col,label,width in (("n","Kandidat",220),("s","Cocok",70),("e","Ciri yang sesuai",430)):
    self.tree.heading(col,text=label); self.tree.column(col,width=width,anchor="center" if col=="s" else "w")
   self.tree.pack(fill="x",pady=6); self.tree.bind("<<TreeviewSelect>>",self.detail)
-  self.text=tk.Text(right,wrap="word",font=("Segoe UI",10),padx=12,pady=10); self.text.pack(fill="both",expand=True); self.text.configure(state="disabled")
-  ttk.Label(right,text="Hasil adalah kandidat pembelajaran, bukan penetapan ilmiah. Foto bunga/buah, daun atas-bawah, akar, dan lokasi meningkatkan keandalan.",wraplength=700,foreground="#764a00").pack(anchor="w",pady=8)
+  compare=ttk.Frame(right); compare.pack(fill="both",expand=True)
+  text_shell=ttk.Frame(compare); text_shell.pack(side="left",fill="both",expand=True)
+  text_scroll=ttk.Scrollbar(text_shell,orient="vertical")
+  self.text=tk.Text(text_shell,wrap="word",font=("Segoe UI",10),padx=12,pady=10,yscrollcommand=text_scroll.set)
+  text_scroll.configure(command=self.text.yview); text_scroll.pack(side="right",fill="y"); self.text.pack(side="left",fill="both",expand=True)
+  self.text.configure(state="disabled")
+  image_shell=ttk.Frame(compare,padding=(10,0,0,0)); image_shell.pack(side="right",fill="y")
+  ttk.Label(image_shell,text="Gambar pembanding pedoman",font=("Segoe UI",10,"bold")).pack(anchor="w")
+  self.reference=ttk.Label(image_shell,text="Pilih kandidat",anchor="center",relief="solid",width=28)
+  self.reference.pack(fill="x",pady=(6,0),ipady=70)
+  self.reference_note=ttk.Label(image_shell,text="Ilustrasi dari PDF sumber.",wraplength=210,justify="left")
+  self.reference_note.pack(anchor="w",pady=6)
+  ttk.Label(right,text="Persentase = kesesuaian gabungan ciri dipilih dengan ciri spesies (bukan kepastian ilmiah). Hasil tinggi tetap perlu dibandingkan dengan gambar dan ciri lapangan.",wraplength=700,foreground="#764a00").pack(anchor="w",pady=8)
  def pick(self):
   path=filedialog.askopenfilename(filetypes=[("Gambar","*.jpg *.jpeg *.png *.webp *.bmp"),("Semua file","*.*")])
   if not path:return
@@ -112,13 +151,20 @@ class App(tk.Tk):
   for row in self.tree.get_children():self.tree.delete(row)
   for sp,score,hits in rank(chosen):
    evidence=", ".join(TRAITS[h] for h in hits) if hits else "Belum ada ciri dipilih"
-   self.tree.insert("","end",iid=sp.name,values=(sp.name,f"{score} poin",evidence))
+   self.tree.insert("","end",iid=sp.name,values=(sp.name,f"{score}%",evidence))
   self.tree.selection_set(self.tree.get_children()[0]); self.detail()
  def detail(self,event=None):
   sel=self.tree.selection()
   if not sel:return
   sp=next(x for x in SPECIES if x.name==sel[0])
   self.text.configure(state="normal"); self.text.delete("1.0","end"); self.text.insert("1.0",sp.name+"\n\n"+sp.detail); self.text.configure(state="disabled")
+  try:
+   with Image.open(resource_path("assets",ASSET_NAMES[sp.name])) as raw:
+    image=raw.convert("RGB"); image.thumbnail((220,300)); self.reference_image=ImageTk.PhotoImage(image)
+   self.reference.configure(image=self.reference_image,text="")
+   self.reference_note.configure(text="Ilustrasi pembanding dari PDF pedoman. Bandingkan daun, bunga/buah, akar, dan habitus.")
+  except Exception:
+   self.reference.configure(image="",text="Gambar pembanding tidak ditemukan")
 
 def self_test():
  assert len(SPECIES)==10
@@ -126,7 +172,9 @@ def self_test():
  assert rank({"buah_puzzle"})[0][0].name=="Xylocarpus granatum"
  assert rank({"akar_kerucut","bunga_merah","muara"})[0][0].name=="Sonneratia caseolaris"
  assert rank({"akar_tunjang","propagul","lumpur"})[0][0].name=="Rhizophora apiculata"
- print("4/4 pemeriksaan logika identifikasi lulus.")
+ assert rank({"akar_tunjang","propagul","lumpur"})[0][1] == 86
+ assert rank(set())[0][1] == 0
+ print("6/6 pemeriksaan logika identifikasi lulus.")
 if __name__=="__main__":
  if "--self-test" in sys.argv:self_test()
  else:App().mainloop()

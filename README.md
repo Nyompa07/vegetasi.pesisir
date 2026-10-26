@@ -8,13 +8,13 @@ Aplikasi desktop untuk membantu mengenali 10 mangrove Indonesia melalui foto dan
 2. Centang hanya ciri yang benar-benar tampak: akar, daun, bunga/buah, dan habitat.
 3. Baca kandidat teratas serta pembeda lapangannya. Foto tambahan dari daun, akar, bunga/buah, dan lokasi memberi keputusan lebih kuat.
 
-Skor adalah poin kecocokan ciri yang transparan, bukan persentase kepastian atau klaim pengenalan AI otomatis. Panduan sumber sendiri menyatakan bahwa ia bukan edisi akhir untuk menjawab semua pertanyaan identifikasi; gunakan hasil untuk pembelajaran/penyaringan awal dan konfirmasi ke ahli untuk catatan ilmiah.
+Skor sekarang berupa persentase 0–100% dari kesesuaian gabungan ciri yang dipilih dengan ciri spesies. Nilai itu bukan persentase kepastian ilmiah atau klaim pengenalan AI otomatis: nilai tinggi tetap harus dicek dengan ilustrasi pembanding yang tampil di aplikasi, serta dengan daun, akar, bunga/buah, dan habitat di lapangan. Panduan sumber sendiri menyatakan bahwa ia bukan edisi akhir untuk menjawab semua pertanyaan identifikasi; gunakan hasil untuk pembelajaran/penyaringan awal dan konfirmasi ke ahli untuk catatan ilmiah.
 
 ## Windows
 
 Cepat: instal Python 3.10+ dari python.org lalu klik JALANKAN_WINDOWS.bat. Jika Pillow belum tersedia, jalankan: py -m pip install -r requirements.txt.
 
-EXE portable: pada komputer Windows, klik build_portable_windows.bat. Hasilnya berada di dist\NyomsVegetasiPantai.exe dan dapat disalin ke komputer Windows lain tanpa memasang Python. EXE Windows perlu dibangun di Windows karena PyInstaller membuat paket untuk sistem operasi tempat build dijalankan.
+EXE portable: pada komputer Windows, klik build_portable_windows.bat. Hasilnya berada di dist\NyomsVegetasiPantai.exe dan dapat disalin ke komputer Windows lain tanpa memasang Python. Ilustrasi pembanding dari pedoman ikut disertakan. EXE Windows perlu dibangun di Windows karena PyInstaller membuat paket untuk sistem operasi tempat build dijalankan.
 
 ## Uji logika
 
